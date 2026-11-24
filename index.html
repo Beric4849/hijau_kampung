@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kampung Hijau 3D</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky 3D viewport beside a feature list; rationale sections below. */
+:root{
+  --bg:#f2f5ee; --panel:#fbfcf8; --fg:#1c2b22; --muted:#56675b; --line:#d3dccd;
+  --accent:#1d7a57; --accent-ink:#ffffff; --sun:#c9821f; --water:#2b7cae;
+  --sky1:#cfe8f3; --sky2:#eef6e6;
+  --f-display:"Bricolage Grotesque","Trebuchet MS",sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1712; --panel:#16211a; --fg:#e3ece5; --muted:#9db0a2; --line:#2a3a2f;
+  --accent:#4fc596; --accent-ink:#06150e; --sun:#e5a64b; --water:#5cb0de;
+  --sky1:#1c3442; --sky2:#1a2a21; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1712; --panel:#16211a; --fg:#e3ece5; --muted:#9db0a2; --line:#2a3a2f;
+  --accent:#4fc596; --accent-ink:#06150e; --sun:#e5a64b; --water:#5cb0de;
+  --sky1:#1c3442; --sky2:#1a2a21; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--f-body);
+  padding-block:24px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(1.9rem,4.5vw,3rem);font-weight:700}
+h2{font-size:1.5rem;margin-bottom:14px}
+h3{font-size:1.05rem}
+header p{max-width:62ch;color:var(--muted);margin:10px 0 22px}
+.eyebrow{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.stage{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+.view{position:sticky;top:12px;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background:linear-gradient(180deg,var(--sky1),var(--sky2))}
+#c{display:block;width:100%;height:min(66vh,560px);min-height:340px;touch-action:none;cursor:grab}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.pin{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;width:28px;height:28px;border-radius:50%;
+  border:2px solid var(--panel);background:var(--accent);color:var(--accent-ink);font:600 12px var(--f-body);cursor:pointer;
+  display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.pin.on{background:var(--sun);transform:translate(-50%,-50%) scale(1.25);z-index:5}
+.pin:focus-visible,.item:focus-visible,.tab:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.toggle{position:absolute;top:10px;right:10px;font:600 .8rem var(--f-body);color:var(--fg);background:var(--panel);
+  border:1px solid var(--line);border-radius:99px;padding:6px 13px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.toggle:hover{border-color:var(--accent)}
+.toggle:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.hint{position:absolute;left:12px;bottom:10px;font-size:.78rem;color:var(--muted);background:var(--panel);
+  padding:3px 9px;border-radius:99px;border:1px solid var(--line)}
+.list{display:flex;flex-direction:column;gap:8px;min-width:0}
+.item{display:flex;gap:12px;text-align:left;width:100%;border:1px solid var(--line);background:var(--panel);color:inherit;
+  padding:10px 12px;border-radius:10px;cursor:pointer;font:inherit}
+.item .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+  display:grid;place-items:center;font-size:.78rem;font-weight:600}
+.item .t{font-weight:600;font-size:.95rem}
+.item .cat{font-size:.72rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.item.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.item.on .n{background:var(--sun)}
+.detail{display:none;margin-top:6px;font-size:.9rem;color:var(--fg)}
+.item.on .detail{display:block}
+.detail b{display:block;font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+section.block{margin-top:56px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:16px;min-width:0}
+.card h3{margin-bottom:6px}
+.card ul{margin:6px 0 0;padding-left:18px}
+.card li{margin:3px 0}
+.card p{margin:0}
+.tag{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:99px;
+  background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:var(--accent);margin-bottom:8px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.9rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.74rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:12px 0 0;font-size:.82rem;color:var(--muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+@media (max-width:860px){.stage{grid-template-columns:minmax(0,1fr)}.view{position:relative;top:0}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Sustainable community design · Malaysia</div>
+  <h1>Kampung Hijau</h1>
+  <p>A 120-home tropical neighbourhood model for the Klang Valley. Drag to rotate, scroll to zoom, then select a numbered marker or a feature on the right to see how it works and why it matters.</p>
+</header>
+
+<div class="stage">
+  <div class="view">
+    <canvas id="c" aria-label="Interactive 3D model of Kampung Hijau"></canvas>
+    <div id="labels"></div>
+    <button type="button" class="toggle" id="togglePins" aria-pressed="true">Hide markers</button>
+    <div class="hint">Drag: rotate · Scroll: zoom · Right-drag: pan</div>
+  </div>
+  <div class="list" id="list"></div>
+</div>
+<div class="legend" id="legend"></div>
+
+<section class="block" id="rationale"></section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// Feature pins: pos = [x,y,z] in scene units (1 unit ≈ 1 m).
+const FEATURES = [
+ {cat:"Energy", title:"Rooftop solar on every home", pos:[14,9.2,-16],
+  how:"Tilted PV panels cover the south-facing roofs of the four housing blocks, with a shared inverter room. Surplus power is exported or shared through the neighbourhood grid.",
+  why:"Malaysia receives strong sunlight all year. Rooftop solar cuts household bills and grid carbon, and the shaded roofs keep the flats below cooler.",
+  tag:"Environmental + economic"},
+ {cat:"Buildings", title:"Green roof and daylight skylights", pos:[0,6.4,-2],
+  how:"The community hall has a planted roof of sedum and native grasses, with skylight wells that bring daylight deep into the hall.",
+  why:"Planted roofs lower roof surface temperature, slow stormwater and host insects and birds. Skylights mean lights stay off in daytime, saving electricity.",
+  tag:"Environmental"},
+ {cat:"Buildings", title:"Cross-ventilation, louvres and green wall", pos:[-19.8,4,-16],
+  how:"Narrow floor plates, louvred openings and a climbing-plant wall on the west face let air pass through and block afternoon sun. Raised floors add airflow underneath.",
+  why:"Passive cooling reduces air-conditioner use, the biggest power load in Malaysian homes. Plants on the wall also filter dust and cool the air.",
+  tag:"Environmental + social"},
+ {cat:"Water", title:"Rainwater harvesting tank", pos:[9.6,4.6,-4],
+  how:"Gutters from the hall roof feed a first-flush diverter and a storage tank. The water supplies toilets, garden irrigation and street washing.",
+  why:"Klang Valley gets heavy daily rain, so the supply is reliable. Using it for non-drinking needs reduces treated water demand and bills.",
+  tag:"Environmental + economic"},
+ {cat:"Water", title:"Bioswale and retention pond", pos:[-22,1.8,13],
+  how:"Paved areas slope into planted swales that lead to a pond with reeds. The pond holds peak flow and releases it slowly.",
+  why:"Slows flash floods, filters pollutants before they reach the river, and creates habitat and a calm place to sit.",
+  tag:"Environmental + social"},
+ {cat:"Transport", title:"Shaded walking and cycling loop", pos:[-8,1.2,4.5],
+  how:"A separated cycle lane and a covered footpath connect homes, school stop, hall and transit hub. Crossings are raised and lit.",
+  why:"Short trips without a car cut emissions and noise, and shade makes walking comfortable in the heat. Safe routes help children and older people.",
+  tag:"Social + environmental"},
+ {cat:"Transport", title:"Transit stop and EV charging canopy", pos:[32,5,13],
+  how:"A bus shelter and shared-EV bays sit under a solar canopy. Bike racks and a lift-free level boarding point sit next to it.",
+  why:"Gives residents an alternative to owning a second car. Charging from on-site solar keeps trips low-carbon.",
+  tag:"Environmental + economic"},
+ {cat:"Energy", title:"Battery cabin and smart meters", pos:[18.5,3.2,-5],
+  how:"A containerised battery stores midday solar for the evening peak. Smart meters show each home's use and shift loads such as water pumps to sunny hours.",
+  why:"Raises how much solar is used locally, steadies the grid at peak time and makes bills visible, which changes habits.",
+  tag:"Economic"},
+ {cat:"Waste", title:"Recycling and composting station", pos:[-9.5,3.4,-3],
+  how:"Colour-coded bins for paper, plastics, glass and metal, a food-waste composter, and a swap shelf for reusable items. Compost goes to the garden.",
+  why:"Separating at source keeps recyclables clean and cuts landfill. Compost closes the loop by feeding local food growing.",
+  tag:"Environmental + social"},
+ {cat:"Green space", title:"Community garden and tree corridor", pos:[-23,2.4,-5.5],
+  how:"Raised beds for vegetables and herbs, fruit trees and a belt of native shade trees that links to the pond and the paths.",
+  why:"Fresh food, cooler streets, bird and pollinator habitat, and a reason for neighbours to meet.",
+  tag:"Social + environmental"},
+ {cat:"Well-being", title:"Inclusive plaza and pavilion", pos:[0,4.4,13],
+  how:"A step-free plaza with ramps, tactile paving, shaded seating, a play area and an open pavilion for markets, prayers and events. Lighting is even and all areas are in sight of homes.",
+  why:"Safe, shaded, accessible space for all ages and abilities builds trust and keeps people active.",
+  tag:"Social"}
+];
+
+const LEGEND = [
+ ["#2c4a8a","Solar panels"],["#3f9a5b","Green roof / planting"],["#2b7cae","Water"],
+ ["#b9b4a6","Paths"],["#c05b4b","Cycle lane"],["#6aa8c9","Recycling"],["#8a5a3a","Compost"]
+];
+
+const RATIONALE = {
+ problems:[
+  ["Urban heat","Dark roofs and paving trap heat. Green roofs, shade trees, a pond and light surfaces lower local temperatures."],
+  ["Flash floods","Hard surfaces send rain to drains at once. Swales, the pond and the harvesting tank hold water back."],
+  ["Energy and carbon","Cooling and lighting drive demand. Solar, daylight and passive design cut both bills and emissions."],
+  ["Waste to landfill","Mixed waste fills landfills. Source separation, composting and reuse shelves divert it."],
+  ["Car dependence","Short, safe, shaded routes and shared EVs reduce private car trips and local air pollution."]
+ ],
+ benefits:[
+  ["Health","Shade, walkable routes, gardens and cleaner air support daily activity and comfort."],
+  ["Accessibility","Step-free routes, ramps, tactile paving and seating suit children, older people and wheelchair users."],
+  ["Comfort","Cross-ventilated homes stay cooler, so fans can replace air conditioners much of the time."],
+  ["Community","Garden, pavilion and plaza give residents regular, low-cost reasons to meet."]
+ ],
+ afford:{
+  intro:"The design favours low-tech, locally made and phased measures. Figures below are rough ranges for planning, not quotes.",
+  rows:[
+   ["Rooftop solar","Medium upfront cost, payback typically several years through lower bills","Use Malaysia's net energy metering or self-consumption schemes, group purchase, or a developer-financed lease"],
+   ["Passive design and green wall","Little extra if planned from the start","Costs are mostly in design decisions: orientation, louvres, openings"],
+   ["Rainwater tank and swales","Low to medium","Share one tank per block; use local earthworks and plants"],
+   ["Recycling and compost","Low","Run by residents' association with council collection"],
+   ["Cycle paths and shade","Low to medium","Reuse existing road reserves; plant trees first for fast shade"]
+  ]},
+ inspired:[
+  ["BedZED, London","Low-carbon housing with passive design and on-site energy. Kampung Hijau adapts this for heat and humidity, aiming for cooling rather than heating."],
+  ["Kampung Admiralty, Singapore","Mixes housing, care and green space for all ages. This design keeps that inclusive mix and adds water management at neighbourhood scale."],
+  ["Putrajaya wetlands","Uses wetlands for stormwater and cooling. Here the same idea is made smaller, as swales and a pond within each neighbourhood."],
+  ["Traditional Malay houses","Raised floors, wide eaves and cross-ventilation. The housing blocks reuse these features with modern materials."]
+ ],
+ challenges:[
+  ["Cost","Solar and storage need capital. Phase them: start with solar and swales, add the battery later. Offer group buying."],
+  ["Technology","Smart meters and pumps need upkeep. Choose simple, serviceable systems and train a resident caretaker."],
+  ["Community acceptance","New habits take time. Involve residents early, run pilot bins on one block and share savings figures."],
+  ["Maintenance","Green roofs, ponds and gardens need care. Fund it from a small service charge and volunteer days."],
+  ["Mosquitoes and safety","Standing water can breed mosquitoes. Keep water moving, stock fish, cover tanks and clear debris."]
+ ],
+ malaysia:[
+  ["Infrastructure","Provide separated cycle lanes and shaded footpaths, EV charging, and stormwater swales that follow national stormwater guidance (MSMA). Allow rainwater tanks on dwellings."],
+  ["Policy","Councils such as MPKj can require green rating (GBI, GreenRE or MyCREST) in new schemes, allow plot-ratio incentives for passive design, and simplify rooftop solar approvals. Keep solid-waste separation (Act 672) in force."],
+  ["Behaviour","Residents sort waste, use shared EVs and bikes for short trips, and join garden and maintenance groups. Smart-meter feedback helps show the savings."]
+ ],
+ note:"Sources are general references to named programmes and projects. Check current local rules, tariffs and costs before using this design in a real project."
+};
+
+// 3D scene, part 1: renderer, helpers, ground, paths, housing blocks, community hall.
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,0.5,500);
+camera.position.set(52,44,62);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.target.set(0,2,0);controls.enableDamping=true;controls.dampingFactor=.08;
+controls.maxPolarAngle=Math.PI/2.05;controls.minDistance=14;controls.maxDistance=140;
+scene.add(new THREE.HemisphereLight(0xe4f4ff,0x7a8a62,0.9));
+const sunL=new THREE.DirectionalLight(0xfff2d6,0.95);
+sunL.position.set(-30,55,35);sunL.castShadow=true;sunL.shadow.mapSize.set(2048,2048);
+Object.assign(sunL.shadow.camera,{left:-65,right:65,top:65,bottom:-65,near:5,far:160});
+scene.add(sunL);
+
+const mats={};
+function M(c,o){const k=c+JSON.stringify(o||{});return mats[k]||(mats[k]=new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.85,metalness:0},o||{})));}
+function put(geo,mat,x,y,z){const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;}
+function box(w,h,d,x,y,z,c,o){return put(new THREE.BoxGeometry(w,h,d),M(c,o),x,y+h/2,z);}
+function cyl(r,h,x,y,z,c,seg,o){return put(new THREE.CylinderGeometry(r,r,h,seg||20),M(c,o),x,y+h/2,z);}
+function ball(r,x,y,z,c){return put(new THREE.SphereGeometry(r,10,8),M(c),x,y,z);}
+let seed=7;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+const C={wall:0xe9dfc8,wood:0x8a6a45,glass:0x7fb2cc,green:0x3f9a5b,leaf:0x2f8450,solar:0x2c4a8a,
+  path:0xb9b4a6,cycle:0xc05b4b,water:0x2b7cae,road:0x585d62};
+function tree(x,z,s,c){s=s||1;cyl(.25*s,2.2*s,x,0,z,0x7a5a3a,6);ball(1.6*s,x,2.8*s,z,c||(rnd()>.5?C.green:C.leaf));}
+
+// Ground, footpath, cycle lane, road, connectors
+box(92,.5,72,0,-.5,0,0x9cc27a);
+box(86,.12,3,0,0,3,C.path);
+box(86,.12,2,0,0,6,C.cycle);
+box(92,.12,5,0,0,24,C.road);
+for(let i=-40;i<=40;i+=8)box(3,.13,.25,i,0,24,0xeeeeee);
+[-30,-14,14,30].forEach(x=>box(2.4,.12,15,x,0,-4.5,C.path));
+box(3,.12,10,0,0,17,C.path);
+
+// Housing blocks: raised plinth, louvres, solar roof
+function housing(x,z,greenWall){
+  box(11,.8,8,x,0,z,0x9a8d78);
+  box(11,6,8,x,.8,z,C.wall);
+  for(let i=-1;i<=1;i+=2)for(let j=0;j<2;j++){
+    const wx=x+i*2.6;
+    box(1.8,1.8,.12,wx,1.6+j*3,z+4.02,C.glass);
+    box(2.4,.14,.9,wx,3.6+j*3-.0,z+4.4,C.wood);   // louvre / overhang
+  }
+  box(12.4,.35,9.4,x,6.8,z,C.wood);               // roof overhang
+  for(let r=0;r<2;r++)for(let c=0;c<2;c++){       // PV panels
+    const p=put(new THREE.BoxGeometry(4.8,.12,2.8),M(C.solar,{metalness:.35,roughness:.4}),x-2.8+c*5.6,7.7,z-1.7+r*3.4);
+    p.rotation.x=-.3;
+  }
+  if(greenWall){
+    box(.4,6,7.6,x-5.7,.8,z,C.leaf);
+    for(let k=0;k<14;k++)ball(.35+rnd()*.25,x-5.9,1.2+rnd()*5,z-3.4+rnd()*6.8,C.green);
+  }
+}
+housing(-30,-16,false);housing(-14,-16,true);housing(14,-16,false);housing(30,-16,false);
+
+// Community hall: glazed front, planted roof, skylights
+box(14,5,8,0,0,-4,0xf1ebda);
+for(let i=-2;i<=2;i++)box(2,2.6,.12,i*2.7,1.2,.03,C.glass);
+box(14.8,.4,8.8,0,5,-4,C.wood);
+box(13.6,.5,7.6,0,5.4,-4,C.green);
+for(let k=0;k<26;k++)ball(.28+rnd()*.2,-6+rnd()*12,5.95,-7.4+rnd()*6.8,C.leaf);
+[-4,0,4].forEach(x=>box(2,.9,2,x,5.9,-4,0xbfe6f5,{transparent:true,opacity:.75}));
+
+// 3D scene, part 2: water, battery, waste, garden, pond, transit hub, plaza, trees.
+// Rainwater tank + downpipe + first-flush pipe
+cyl(1.8,3.4,9.6,0,-4,0x6aa8c9,24,{transparent:true,opacity:.9});
+cyl(1.9,.25,9.6,3.4,-4,0x4d7f9a,24);
+cyl(.12,5,7.25,0,-4,0x555555,8);
+box(2.2,.2,.2,8.3,.6,-4,0x555555);
+
+// Battery cabin + smart meter pole
+box(4,2.4,2.4,18.5,0,-5,0xdfe5e8);
+box(4.05,.4,2.45,18.5,1.0,-5,0x4fc596);
+box(.4,3.2,.4,23,0,-5,0x666666);
+
+// Waste station: roof, bins, composter
+box(5.4,.2,2.8,-9.5,2.7,-3,C.wood);
+[-11.7,-7.3].forEach(x=>cyl(.1,2.7,x,0,-4.2,0x6b5a45,6));
+box(1.2,1.5,1,-10.8,0,-3,0x6aa8c9);
+box(1.2,1.5,1,-9.4,0,-3,0x3f7fb5);
+box(1.2,1.5,1,-8.0,0,-3,0xd9c24a);
+cyl(.7,1.3,-6.1,0,-3,0x8a5a3a,16);
+
+// Community garden: raised beds with crops, fruit trees
+[-8,-5.5,-3].forEach(z=>{
+  box(7,.6,1.4,-23,0,z,0x7a5a3a);
+  for(let k=0;k<7;k++)ball(.32+rnd()*.12,-26+k*1,.75,z,rnd()>.4?0x4aa860:0x78b84a);
+});
+[-27,-19].forEach(x=>tree(x,-1,.8,0x4aa860));
+
+// Pond with reeds, swale linking plaza to pond
+put(new THREE.CylinderGeometry(1,1,.3,40),M(C.water,{transparent:true,opacity:.88,roughness:.2}),-22,.0,13).scale.set(8.5,1,5);
+for(let k=0;k<30;k++){const a=rnd()*6.28,r=.85+rnd()*.2;
+  put(new THREE.ConeGeometry(.12,1.3,5),M(0x4d8a3a),-22+Math.cos(a)*8.5*r,.6,13+Math.sin(a)*5*r);}
+box(9,.15,1.6,-15,0,13,0x5f9b6a);
+box(8.4,.2,.8,-15,0,13,C.water);
+
+// Transit hub: bus shelter, bus, solar EV canopy, chargers, bike rack
+[-1.6,1.6].forEach(dx=>cyl(.1,2.6,22+dx,0,16,0x555555,6));
+box(4.4,.2,2.4,22,2.6,16,0x6aa8c9,{transparent:true,opacity:.7});
+box(3,.4,.7,22,.5,16.5,C.wood);
+box(9,3,2.8,20,.4,22.2,0x3a6fb0);
+box(8.6,1,.1,20,1.6,20.78,C.glass);
+[-3,3].forEach(dx=>[-2,2].forEach(dz=>cyl(.12,3.6,32+dx*1.6,0,13+dz*1.6,0x555555,6)));
+const can=put(new THREE.BoxGeometry(9.5,.15,6),M(C.solar,{metalness:.35,roughness:.4}),32,3.9,13);can.rotation.x=-.12;
+[29.5,34.5].forEach(x=>{box(2,1,3.6,x,.3,13,0xf4f4f4);cyl(.15,1.4,x,0,10.9,0x4fc596,8);});
+for(let k=0;k<5;k++)box(.15,.8,1.4,24+k*.9,0,11,0x777777);
+
+// Inclusive plaza: step-free ramp, tactile strip, pavilion, benches, play area
+box(22,.15,12,0,0,13,0xd8d2c0);
+box(22,.05,.5,0,.15,7.4,0xe0b84a);
+const ramp=put(new THREE.BoxGeometry(6,.18,4),M(0xcfc8b4),-14,.45,20.5);ramp.rotation.x=.12;
+[-3,3].forEach(x=>[11,15].forEach(z=>cyl(.15,3.2,x,0,z,C.wood,8)));
+box(8,.3,6.4,0,3.2,13,C.wood);
+box(7.4,.12,5.8,0,3.5,13,C.green);
+[-6,6].forEach(x=>box(.6,.5,2.4,x,0,16,C.wood));
+cyl(1.4,.2,8,0,16,0xe6c46a,16);box(.2,1.8,.2,8,.2,16,0xcc5544);
+
+// Tree corridor along the west and back edges, shade trees by paths
+for(let z=-30;z<=26;z+=4.5)tree(-42,z+rnd()*2,1.1);
+for(let x=-40;x<=40;x+=5)if(Math.abs(x)>1)tree(x+rnd(),-27+rnd()*2,1);
+for(let x=-36;x<=36;x+=8.5)tree(x,1.2,.9);
+[-30,-14,14,30].forEach(x=>{tree(x-2.2,-6,.8);tree(x+2.2,-9,.8);});
+tree(40,-6,1);tree(40,3,1);
+
+// Responsive size
+function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;
+  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(canvas);resize();
+
+// UI: numbered pins projected from 3D, feature list, camera focus, rationale sections.
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const listEl=document.getElementById('list'), labelsEl=document.getElementById('labels');
+let active=-1, focusAnim=null;
+const pins=[], items=[];
+
+FEATURES.forEach((f,i)=>{
+  const p=document.createElement('button');p.className='pin';p.textContent=i+1;
+  p.setAttribute('aria-label',f.title);p.onclick=()=>select(i,true);
+  labelsEl.appendChild(p);pins.push(p);
+
+  const b=document.createElement('button');b.className='item';b.type='button';
+  b.setAttribute('aria-expanded','false');
+  b.innerHTML='<span class="n">'+(i+1)+'</span><span><span class="cat">'+esc(f.cat)+'</span><br><span class="t">'+esc(f.title)+'</span>'+
+   '<span class="detail"><span class="tag">'+esc(f.tag)+'</span><b>How it works</b>'+esc(f.how)+'<b>Why it matters</b>'+esc(f.why)+'</span></span>';
+  b.onclick=()=>select(i,true);
+  listEl.appendChild(b);items.push(b);
+});
+
+function select(i,fly){
+  active=(active===i&&!fly)?-1:i;
+  pins.forEach((p,k)=>p.classList.toggle('on',k===active));
+  items.forEach((b,k)=>{b.classList.toggle('on',k===active);b.setAttribute('aria-expanded',k===active);});
+  if(active>=0&&fly){
+    const t=new THREE.Vector3(...FEATURES[active].pos);
+    const dir=camera.position.clone().sub(controls.target).normalize();
+    const dist=Math.min(Math.max(camera.position.distanceTo(controls.target),30),48);
+    focusAnim={t0:performance.now(),fromT:controls.target.clone(),toT:t.clone().setY(t.y*0.5),
+      fromP:camera.position.clone(),toP:t.clone().setY(t.y*0.5).add(dir.multiplyScalar(dist))};
+    items[active].scrollIntoView({block:'nearest',behavior:'smooth'});
+  }
+}
+
+// Show / hide the numbered markers (choice is remembered when storage is available)
+const toggleBtn=document.getElementById('togglePins');
+function setPins(show){
+  labelsEl.hidden=!show;
+  toggleBtn.textContent=show?'Hide markers':'Show markers';
+  toggleBtn.setAttribute('aria-pressed',String(show));
+  try{localStorage.setItem('kampung-pins',show?'1':'0');}catch(e){}
+}
+toggleBtn.onclick=()=>setPins(labelsEl.hidden);
+let savedPins='1';try{savedPins=localStorage.getItem('kampung-pins')||'1';}catch(e){}
+setPins(savedPins!=='0');
+
+// Legend
+document.getElementById('legend').innerHTML=LEGEND.map(l=>'<span><i style="background:'+l[0]+'"></i>'+esc(l[1])+'</span>').join('');
+
+// Rationale
+(function(){
+  const R=RATIONALE;
+  const cards=(arr,k)=>'<div class="grid">'+arr.map(a=>'<div class="card"><h3>'+esc(a[0])+'</h3><p>'+esc(a[1])+'</p></div>').join('')+'</div>';
+  const sec=(title,body)=>'<div style="margin-top:40px"><h2>'+esc(title)+'</h2>'+body+'</div>';
+  const rows=R.afford.rows.map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td></tr>').join('');
+  document.getElementById('rationale').innerHTML=
+   '<div class="eyebrow">Design rationale</div><h2>Why this design is sustainable</h2>'+
+   '<p style="max-width:70ch;color:var(--muted);margin:0 0 6px">Energy, water, materials, transport, waste, green space and well-being work together. Each feature reduces a specific local problem and gives residents a daily benefit.</p>'+
+   sec('Problems it addresses',cards(R.problems))+
+   sec('Benefits for residents',cards(R.benefits))+
+   sec('Affordability and practicality','<p style="max-width:70ch;color:var(--muted)">'+esc(R.afford.intro)+'</p><div class="tablewrap"><table><thead><tr><th>Feature</th><th>Cost level</th><th>How to make it practical</th></tr></thead><tbody>'+rows+'</tbody></table></div>')+
+   sec('Real-world inspiration and what changes',cards(R.inspired))+
+   sec('Challenges and solutions',cards(R.challenges))+
+   sec('Applying it in a Malaysian community',cards(R.malaysia))+
+   '<p style="margin-top:28px;font-size:.85rem;color:var(--muted);max-width:70ch">'+esc(R.note)+'</p>';
+})();
+
+// Pin projection + render loop
+const v=new THREE.Vector3();
+function placePins(){
+  const w=canvas.clientWidth,h=canvas.clientHeight;
+  FEATURES.forEach((f,i)=>{
+    v.set(...f.pos).project(camera);
+    const ok=v.z<1&&Math.abs(v.x)<1.05&&Math.abs(v.y)<1.05;
+    pins[i].style.display=ok?'grid':'none';
+    pins[i].style.left=((v.x+1)/2*w)+'px';
+    pins[i].style.top=((1-v.y)/2*h)+'px';
+  });
+}
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function frame(now){
+  if(focusAnim){
+    const k=reduce?1:Math.min((now-focusAnim.t0)/900,1), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    controls.target.lerpVectors(focusAnim.fromT,focusAnim.toT,e);
+    camera.position.lerpVectors(focusAnim.fromP,focusAnim.toP,e);
+    if(k>=1)focusAnim=null;
+  }
+  controls.update();renderer.render(scene,camera);placePins();
+  requestAnimationFrame(frame);
+}
+canvas.addEventListener('pointerdown',()=>{focusAnim=null;});
+requestAnimationFrame(frame);
+select(0,false);
+
+</script>
+
+</body>
+</html>
